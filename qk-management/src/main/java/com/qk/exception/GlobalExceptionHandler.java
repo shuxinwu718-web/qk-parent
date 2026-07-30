@@ -1,0 +1,104 @@
+package com.qk.exception;
+
+import com.qk.common.Result;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // 兜底异常
+    @ExceptionHandler
+    public Result ex(Exception e) {
+        log.error("服务器发生异常", e);
+        return Result.error("对不起，操作失败，请联系管理员");
+    }
+
+    // 1. 参数校验异常（@Valid）
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        log.warn("参数校验失败: {}", errors);
+        return Result.error("参数校验失败: " + errors);
+    }
+
+    // 2. 表单参数绑定异常
+    @ExceptionHandler(BindException.class)
+    public Result handleBindException(BindException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        log.warn("参数绑定失败: {}", errors);
+        return Result.error("参数绑定失败: " + errors);
+    }
+
+    // 3. JSON 格式错误
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Result handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.warn("请求体格式错误: {}", ex.getMessage());
+        return Result.error("请求体格式错误，请检查 JSON 格式或字段类型");
+    }
+
+    // 4. 缺少必填参数
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public Result handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
+        log.warn("缺少必填参数: {}", ex.getParameterName());
+        return Result.error("缺少必填参数: " + ex.getParameterName());
+    }
+
+    // 5. 参数类型不匹配
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public Result handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.warn("参数类型不匹配: 参数 {} 应为 {} 类型", ex.getName(), ex.getRequiredType().getSimpleName());
+        return Result.error("参数 " + ex.getName() + " 类型错误，应为 " + ex.getRequiredType().getSimpleName());
+    }
+
+    // 6. 请求方法不支持
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public Result handleHttpRequestMethodNotSupportedException(
+            org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        log.warn("请求方法不支持: {}", ex.getMessage());
+        return Result.error("请求方法不支持，请使用 " + ex.getSupportedMethods());
+    }
+
+    // 7. 404 未找到
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public Result handleNoHandlerFoundException(NoHandlerFoundException ex) {
+        log.warn("接口不存在: {}", ex.getRequestURL());
+        return Result.error("请求的接口不存在");
+    }
+
+    // 8. 自定义业务异常
+    @ExceptionHandler(BusinessException.class)
+    public Result handleBusinessException(BusinessException ex) {
+        log.warn("业务异常: {}", ex.getMessage());
+        return Result.error(ex.getMessage());
+    }
+
+    // 9. 未捕获的 RuntimeException（兜底）
+    @ExceptionHandler(RuntimeException.class)
+    public Result handleRuntimeException(RuntimeException e) {
+        log.error("运行时异常: {}", e.getMessage(), e);
+        return Result.error("服务繁忙，请稍后再试");
+    }
+}

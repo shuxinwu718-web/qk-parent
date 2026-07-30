@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qk.mapper.UserMapper">
+
+    <!-- 动态条件分页查询 -->
+    <select id="getUsers" resultType="com.qk.entity.User">
+        select u.*, d.name as dept_name, r.name as role_name
+        from user u
+        left join dept d on u.dept_id = d.id
+        left join role r on u.role_id = r.id
+        <where>
+            <if test="name != null and name != ''">
+                and u.name like concat('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                and u.status = #{status}
+            </if>
+            <if test="phone != null and phone != ''">
+                and u.phone like concat('%', #{phone}, '%')
+            </if>
+            <if test="deptId != null">
+                and u.dept_id = #{deptId}
+            </if>
+        </where>
+        order by u.create_time desc
+    </select>
+
+</mapper>
