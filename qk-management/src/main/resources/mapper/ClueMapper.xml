@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.qk.mapper.ClueMapper">
+
+    <!-- 线索列表 -->
+    <select id="listClues" resultType="com.qk.entity.Clue">
+        select
+        c.*,
+        u.name as assign_name
+        from clue c
+        left join user u on c.user_id = u.id
+        <where>
+            <if test="clueQueryDto.clueId != null">
+                and c.id = #{clueQueryDto.clueId}
+            </if>
+            <if test="clueQueryDto.phone != null and clueQueryDto.phone != ''">
+                and c.phone like '%${clueQueryDto.phone}%'
+            </if>
+            <if test="clueQueryDto.status != null">
+                and c.status = #{clueQueryDto.status}
+            </if>
+            <if test="clueQueryDto.channel != null">
+                and c.channel = #{clueQueryDto.channel}
+            </if>
+            <if test="clueQueryDto.assignName != null and clueQueryDto.assignName != ''">
+                and u.name like concat('%', #{clueQueryDto.assignName}, '%')
+            </if>
+            AND c.status not in (4,5)
+        </where>
+        order by c.update_time desc
+    </select>
+</mapper>

@@ -5,18 +5,22 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qk.common.PageResult;
 import com.qk.dto.UserDto;
 import com.qk.entity.Dept;
+import com.qk.entity.LoginResultVo;
 import com.qk.entity.Role;
 import com.qk.entity.User;
+import com.qk.exception.BusinessException;
 import com.qk.mapper.DeptMapper;
 import com.qk.mapper.RoleMapper;
 import com.qk.mapper.UserMapper;
 import com.qk.service.UserService;
+import com.qk.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +36,47 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private RoleMapper roleMapper;
+
+
+         /*
+          登录
+          */
+    @Override
+    public LoginResultVo login(String username, String password) {
+        // 1. 根据用户名查询用户信息（包含角色标签）
+        User user = userMapper.selectByUsername(username);
+
+        // 2. 校验用户是否存在及密码是否正确
+        if (user == null || !user.getPassword().equals(DigestUtils.md5DigestAsHex(password.getBytes()))) {
+            throw new BusinessException("用户名或密码错误");
+        }
+
+        // 3. 校验用户状态（0=停用）
+        if (user.getStatus() == 0) {
+            throw new BusinessException("对不起，您的账号已停用");
+        }
+
+        // 4. 构造登录结果
+        LoginResultVo loginResult = new LoginResultVo();
+        loginResult.setId(user.getId());
+        loginResult.setUsername(user.getUsername());
+        loginResult.setName(user.getName());
+        loginResult.setImage(user.getImage());
+        loginResult.setRoleLabel(user.getRoleLabel());
+
+        // 5. 生成 JWT Token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", user.getId());
+        claims.put("username", user.getUsername());
+        claims.put("name", user.getName());
+        claims.put("roleLabel", user.getRoleLabel());
+        String token = JwtUtils.generateToken(claims);
+
+        loginResult.setToken(token);
+
+        return loginResult;
+    }
+
 
     @Override
     public PageResult<User> getUsers(UserDto userDto) {

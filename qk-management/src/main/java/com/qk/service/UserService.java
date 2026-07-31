@@ -2,6 +2,7 @@ package com.qk.service;
 
 import com.qk.common.PageResult;
 import com.qk.dto.UserDto;
+import com.qk.entity.LoginResultVo;
 import com.qk.entity.User;
 import java.util.List;
 
@@ -51,4 +52,9 @@ public interface UserService {
      * 根据部门ID查询用户
      */
     List<User> getUsersByDeptId(Integer deptId);
+
+    /**
+     * 👇 新增：用户登录
+     */
+    LoginResultVo login(String username, String password);
 }

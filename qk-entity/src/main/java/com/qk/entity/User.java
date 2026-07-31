@@ -33,4 +33,8 @@ public class User {
 
     @TableField(exist = false)
     private String roleName;
+
+    // 👇 新增：角色标签（用于登录）
+    @TableField(exist = false)
+    private String roleLabel;
 }
